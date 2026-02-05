@@ -24,6 +24,9 @@ ENV/
 *.md
 !README.md
 
+# PDF files (textbooks, documentation)
+*.pdf
+
 # Node modules
 node_modules/
 
