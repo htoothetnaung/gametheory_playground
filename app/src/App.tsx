@@ -11,8 +11,11 @@ import { SemanticVectorSpace } from '@/components/ui-custom/SemanticVectorSpace'
 import { ImposterMonologue } from '@/components/ui-custom/ImposterMonologue';
 import { useGameStore } from '@/store/gameStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { Brain, Wifi, WifiOff, Target, Users } from 'lucide-react';
+import { Brain, Wifi, WifiOff, Target, Users, Gamepad2, Bot, ArrowLeft } from 'lucide-react';
+import { OfflineGame } from '@/components/ui-custom/offline/OfflineGame';
 import './App.css';
+
+type AppMode = 'landing' | 'agents' | 'offline';
 
 const HERO_PARTICLE_CLASSES = [
   'hero-particle-0', 'hero-particle-1', 'hero-particle-2', 'hero-particle-3', 'hero-particle-4',
@@ -441,9 +444,156 @@ function GodMode() {
   );
 }
 
-function App() {
+function LandingPage({ onSelectMode }: { onSelectMode: (mode: AppMode) => void }) {
+  return (
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-gradient-radial from-neon-purple/10 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-cyber-grid bg-cyber-grid opacity-30" />
+
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className={`absolute w-1 h-1 bg-neon-purple rounded-full animate-particle-float ${HERO_PARTICLE_CLASSES[i]}`}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 text-center px-4 max-w-3xl">
+        <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-neon-purple/30">
+          <Brain className="w-4 h-4 text-neon-purple" />
+          <span className="text-sm text-white/70">Semantic Signaling • Imposter Game</span>
+        </div>
+
+        <h1 className="font-display text-5xl md:text-7xl font-bold mb-4">
+          <span className="gradient-text">Semantic</span>
+          <br />
+          <span className="text-white">Signaling</span>
+        </h1>
+
+        <p className="text-xl text-white/50 mb-2 max-w-2xl mx-auto font-light">
+          A Zero-Sum Game of Imperfect Information
+        </p>
+
+        <p className="text-lg text-white/40 mb-12 max-w-xl mx-auto">
+          Choose how you want to play — watch AI agents battle it out,
+          or play offline with your friends!
+        </p>
+
+        {/* Two mode cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto mb-12">
+          {/* AI Agents mode */}
+          <button
+            onClick={() => onSelectMode('agents')}
+            className="group glass-panel-strong border border-neon-purple/30 rounded-2xl p-8 text-left
+              hover:border-neon-purple/60 hover:shadow-[0_0_30px_rgba(168,133,255,0.15)]
+              transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="w-14 h-14 rounded-xl bg-neon-purple/20 flex items-center justify-center mb-5
+              group-hover:bg-neon-purple/30 transition-colors">
+              <Bot className="w-7 h-7 text-neon-purple" />
+            </div>
+            <h3 className="font-display text-xl text-white mb-2">Play with AI Agents</h3>
+            <p className="text-sm text-white/40 leading-relaxed">
+              Watch AI agents powered by LLMs navigate semantic deception.
+              Observe, analyze, or participate in real-time.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-4">
+              {['Google ADK', 'Groq LLaMA-3', 'FastAPI', 'Three.js'].map((tech) => (
+                <span key={tech} className="px-2 py-0.5 text-[10px] font-mono text-white/25 border border-white/10 rounded">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          </button>
+
+          {/* Offline mode */}
+          <button
+            onClick={() => onSelectMode('offline')}
+            className="group glass-panel-strong border border-emerald-500/30 rounded-2xl p-8 text-left
+              hover:border-emerald-500/60 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]
+              transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="w-14 h-14 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-5
+              group-hover:bg-emerald-500/30 transition-colors">
+              <Gamepad2 className="w-7 h-7 text-emerald-400" />
+            </div>
+            <h3 className="font-display text-xl text-white mb-2">Play Offline</h3>
+            <p className="text-sm text-white/40 leading-relaxed">
+              Play with friends on one device! 6 players, random roles,
+              pick cards secretly one by one like poker.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-4">
+              {['6 Players', '1 Imposter', 'Pass & Play'].map((tag) => (
+                <span key={tag} className="px-2 py-0.5 text-[10px] font-mono text-white/25 border border-white/10 rounded">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </button>
+        </div>
+
+        {/* Game theory concepts */}
+        <div className="flex justify-center gap-6">
+          {[
+            { label: 'Pooling Equilibrium', icon: Users },
+            { label: 'Separating Equilibrium', icon: Target },
+            { label: 'Bayesian Updating', icon: Brain },
+          ].map((concept) => (
+            <div key={concept.label} className="flex items-center gap-2 text-white/40">
+              <concept.icon className="w-4 h-4" />
+              <span className="text-xs font-mono">{concept.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Vignette */}
+      <div className="absolute inset-0 bg-gradient-to-t from-void via-transparent to-transparent pointer-events-none" />
+    </div>
+  );
+}
+
+function AgentsMode({ onBack }: { onBack: () => void }) {
   const [hasEntered, setHasEntered] = useState(false);
-  const { viewMode, themeMode } = useGameStore();
+  const { viewMode } = useGameStore();
+
+  if (!hasEntered) {
+    return (
+      <div className="relative">
+        <button
+          onClick={onBack}
+          className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg glass-panel border border-white/10 text-white/50 hover:text-white/80 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm font-body">Menu</span>
+        </button>
+        <HeroSection onEnter={() => setHasEntered(true)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => { setHasEntered(false); onBack(); }}
+        className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg glass-panel border border-white/10 text-white/50 hover:text-white/80 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span className="text-sm font-body">Menu</span>
+      </button>
+      <Suspense fallback={<LoadingScreen />}>
+        {viewMode === 'theater' ? <TheaterMode /> : <GodMode />}
+      </Suspense>
+    </div>
+  );
+}
+
+function App() {
+  const [appMode, setAppMode] = useState<AppMode>('landing');
+  const { themeMode } = useGameStore();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -458,20 +608,16 @@ function App() {
     }
   }, [themeMode]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => { }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!hasEntered) {
-    return <HeroSection onEnter={() => setHasEntered(true)} />;
+  if (appMode === 'landing') {
+    return <LandingPage onSelectMode={setAppMode} />;
   }
 
-  return (
-    <Suspense fallback={<LoadingScreen />}>
-      {viewMode === 'theater' ? <TheaterMode /> : <GodMode />}
-    </Suspense>
-  );
+  if (appMode === 'offline') {
+    return <OfflineGame onBackToMenu={() => setAppMode('landing')} />;
+  }
+
+  // appMode === 'agents'
+  return <AgentsMode onBack={() => setAppMode('landing')} />;
 }
 
 export default App;
