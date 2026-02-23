@@ -2,6 +2,7 @@
 Pydantic models for game state - matches frontend TypeScript types exactly.
 Based on app/src/types/index.ts
 """
+
 from typing import Literal, Optional
 from pydantic import BaseModel, Field
 from enum import Enum
@@ -30,6 +31,7 @@ class PlayerRole(str, Enum):
 
 class Player(BaseModel):
     """Represents a player in the game"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     role: PlayerRole
@@ -59,21 +61,28 @@ class Player(BaseModel):
 
 class CandidateWord(BaseModel):
     """A word the imposter suspects with its probability"""
+
     word: str
     probability: float = Field(ge=0.0, le=1.0)
 
 
 class ImposterKnowledge(BaseModel):
     """Imposter's Bayesian belief state - tracks what they think the secret word is"""
+
     candidate_words: list[CandidateWord] = []
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    entropy: float = Field(default=1.0, ge=0.0)
     top_guess: str = ""
     thought_process: str = ""
 
     def to_frontend(self) -> dict:
         return {
-            "candidateWords": [{"word": cw.word, "probability": cw.probability} for cw in self.candidate_words],
+            "candidateWords": [
+                {"word": cw.word, "probability": cw.probability}
+                for cw in self.candidate_words
+            ],
             "confidence": self.confidence,
+            "entropy": self.entropy,
             "topGuess": self.top_guess,
             "thoughtProcess": self.thought_process,
         }
@@ -81,6 +90,7 @@ class ImposterKnowledge(BaseModel):
 
 class Clue(BaseModel):
     """A clue given by a player with game-theory metrics"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     player_id: str
     player_name: str
@@ -103,6 +113,7 @@ class Clue(BaseModel):
 
 class Vote(BaseModel):
     """A vote cast by a player"""
+
     voter_id: str
     target_id: str
     reason: Optional[str] = None
@@ -117,6 +128,7 @@ class Vote(BaseModel):
 
 class AgentInternal(BaseModel):
     """Internal thoughts of an AI agent - for admin dashboard visualization"""
+
     player_id: str
     player_name: str
     role: PlayerRole
@@ -137,6 +149,7 @@ class AgentInternal(BaseModel):
 
 class SemanticVector(BaseModel):
     """2D point for semantic vector space visualization (PCA/t-SNE reduced)"""
+
     x: float
     y: float
     label: str
@@ -155,8 +168,9 @@ class SemanticVector(BaseModel):
 
 class GameState(BaseModel):
     """Complete game state - synced with frontend store"""
+
     secret_word: str
-    imposter_id: str
+    imposter_ids: list[str] = []
     phase: GamePhase = GamePhase.CLUE_GIVING
     round: int = 1
     current_player_index: int = 0
@@ -166,10 +180,16 @@ class GameState(BaseModel):
     imposter_knowledge: ImposterKnowledge = Field(default_factory=ImposterKnowledge)
     winner: Optional[Literal["civilians", "imposter"]] = None
 
+    @property
+    def imposter_id(self) -> str:
+        """Backward-compatible property returning first imposter ID."""
+        return self.imposter_ids[0] if self.imposter_ids else ""
+
     def to_frontend(self) -> dict:
         return {
             "secretWord": self.secret_word,
-            "imposterId": self.imposter_id,
+            "imposterId": self.imposter_ids[0] if self.imposter_ids else "",
+            "imposterIds": self.imposter_ids,
             "phase": self.phase.value,
             "round": self.round,
             "currentPlayerIndex": self.current_player_index,
@@ -186,11 +206,13 @@ class GameState(BaseModel):
             return alive_players[self.current_player_index]
         return None
 
+    def get_imposters(self) -> list[Player]:
+        return [p for p in self.players if p.id in self.imposter_ids]
+
     def get_imposter(self) -> Optional[Player]:
-        for p in self.players:
-            if p.id == self.imposter_id:
-                return p
-        return None
+        """Backward-compatible: returns first imposter."""
+        imposters = self.get_imposters()
+        return imposters[0] if imposters else None
 
     def get_alive_count(self) -> int:
         return sum(1 for p in self.players if p.is_alive)
@@ -198,19 +220,23 @@ class GameState(BaseModel):
 
 # ============ Request/Response Models for API ============
 
+
 class GameConfig(BaseModel):
     """Configuration for starting a new game"""
-    num_players: int = Field(default=6, ge=3, le=10)
+
+    num_players: int = Field(default=5, ge=3, le=10)
     word_pool: Optional[list[str]] = None  # If None, use default pool
 
 
 class ClueRequest(BaseModel):
     """Request to generate a clue for current player"""
+
     pass  # Game engine handles context
 
 
 class VoteRequest(BaseModel):
     """Request to cast a vote"""
+
     voter_id: str
     target_id: str
     reason: Optional[str] = None
@@ -218,6 +244,7 @@ class VoteRequest(BaseModel):
 
 class GameActionResponse(BaseModel):
     """Generic response for game actions"""
+
     success: bool
     message: str
     state: Optional[dict] = None

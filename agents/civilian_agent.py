@@ -12,6 +12,7 @@ to balance Information Hiding vs. Signaling.
 """
 import os
 import sys
+import inspect
 from typing import Optional
 
 # Add project root to path
@@ -72,8 +73,8 @@ STRATEGY: [Mixed Strategy - similarity X.XX in optimal zone]
 
 
 def create_civilian_agent(
-    model: str = "gemini-2.0-flash",
-    provider: str = "gemini"
+    model: str = "llama3.2:3b",
+    provider: str = "ollama"
 ) -> LlmAgent:
     """
     Create a Civilian agent for the Semantic Signaling game.
@@ -89,6 +90,8 @@ def create_civilian_agent(
     if provider == "groq":
         # Groq uses different model names
         model_name = "llama-3.1-70b-versatile"
+    elif provider == "ollama":
+        model_name = model if model.startswith("ollama/") else f"ollama/{model}"
     else:
         model_name = model
     
@@ -108,7 +111,9 @@ async def generate_civilian_clue(
     agent: LlmAgent,
     secret_word: str,
     clue_history: list[str],
-    player_name: str
+    player_name: str,
+    votes_context: Optional[list[dict]] = None,
+    reasoning_context: Optional[list[str]] = None,
 ) -> dict:
     """
     Generate a clue from the civilian agent.
@@ -128,12 +133,25 @@ async def generate_civilian_clue(
         history_text = "Previous clues given: " + ", ".join(clue_history)
     else:
         history_text = "You are giving the first clue."
+
+    votes_text = ""
+    if votes_context:
+        votes_text = "Recent voting behavior: " + "; ".join(
+            f"{v.get('voter', 'unknown')}→{v.get('target', 'unknown')}"
+            for v in votes_context[-5:]
+        )
+
+    reasoning_text = ""
+    if reasoning_context:
+        reasoning_text = "Recent team reasoning: " + " | ".join(reasoning_context[-4:])
     
     prompt = f"""
 You are {player_name}, a CIVILIAN.
 The SECRET WORD is: {secret_word}
 
 {history_text}
+{votes_text}
+{reasoning_text}
 
 Generate your clue now. Remember:
 1. First, think of 5 candidate clues
@@ -147,22 +165,131 @@ Generate your clue now. Remember:
     from google.adk.sessions import InMemorySessionService
     
     session_service = InMemorySessionService()
-    runner = Runner(agent=agent, app_name="semantic_signaling")
+    runner = Runner(
+        agent=agent,
+        app_name="semantic_signaling",
+        session_service=session_service,
+    )
     
     session = await session_service.create_session(
         app_name="semantic_signaling",
         user_id=player_name
     )
+
+    try:
+        from google.genai.types import Content, Part
+        new_message = Content(role="user", parts=[Part(text=prompt)])
+    except Exception:
+        new_message = {"role": "user", "parts": [{"text": prompt}]}
     
-    # Execute agent turn
-    response = await runner.run(
+    response_text = await _collect_runner_response_text(
+        runner=runner,
         user_id=player_name,
         session_id=session.id,
-        new_message=prompt
+        new_message=new_message,
     )
+    if not response_text:
+        response_text = ""
     
     # Parse response to extract clue
-    return _parse_civilian_response(response.text if hasattr(response, 'text') else str(response))
+    return _parse_civilian_response(response_text)
+
+
+def _extract_runner_text(response: object) -> str:
+    """Extract the most relevant text from ADK runner output across API versions."""
+    direct_text = _extract_event_text(response)
+    if direct_text:
+        return direct_text
+
+    if hasattr(response, "__iter__") and not isinstance(response, (str, bytes, dict)):
+        final_text = ""
+        for event in response:
+            event_text = _extract_event_text(event)
+            if event_text:
+                final_text = event_text
+        return final_text
+
+    return ""
+
+
+async def _collect_runner_response_text(
+    runner,
+    user_id: str,
+    session_id: str,
+    new_message: object,
+) -> str:
+    """Run ADK runner with compatibility across async and sync APIs."""
+    run_async = getattr(runner, "run_async", None)
+    if callable(run_async):
+        async_result = run_async(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=new_message,
+        )
+        if inspect.isawaitable(async_result):
+            async_result = await async_result
+
+        if hasattr(async_result, "__aiter__"):
+            final_text = ""
+            async for event in async_result:
+                event_text = _extract_event_text(event)
+                if event_text:
+                    final_text = event_text
+            return final_text
+
+        extracted = _extract_runner_text(async_result)
+        return extracted
+
+    response = runner.run(
+        user_id=user_id,
+        session_id=session_id,
+        new_message=new_message,
+    )
+    if inspect.isawaitable(response):
+        response = await response
+    return _extract_runner_text(response)
+
+
+def _extract_event_text(event: object) -> str:
+    """Best-effort text extraction for ADK event payloads."""
+    if event is None:
+        return ""
+
+    if isinstance(event, str):
+        return event.strip()
+
+    if isinstance(event, dict):
+        if isinstance(event.get("text"), str):
+            return event["text"].strip()
+        content = event.get("content")
+        if isinstance(content, dict):
+            parts = content.get("parts")
+            if isinstance(parts, list):
+                part_text = [p.get("text", "") for p in parts if isinstance(p, dict) and isinstance(p.get("text"), str)]
+                return " ".join([t.strip() for t in part_text if t.strip()]).strip()
+        return ""
+
+    text_attr = getattr(event, "text", None)
+    if isinstance(text_attr, str) and text_attr.strip():
+        return text_attr.strip()
+
+    content_attr = getattr(event, "content", None)
+    if content_attr is not None:
+        parts = getattr(content_attr, "parts", None)
+        if isinstance(parts, list):
+            extracted: list[str] = []
+            for part in parts:
+                part_text = getattr(part, "text", None)
+                if isinstance(part_text, str) and part_text.strip():
+                    extracted.append(part_text.strip())
+                elif isinstance(part, dict):
+                    maybe_text = part.get("text")
+                    if isinstance(maybe_text, str) and maybe_text.strip():
+                        extracted.append(maybe_text.strip())
+            if extracted:
+                return " ".join(extracted).strip()
+
+    return ""
 
 
 def _parse_civilian_response(response_text: str) -> dict:

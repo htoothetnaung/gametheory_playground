@@ -189,6 +189,76 @@ class EmbeddingService:
         """Clear embedding cache"""
         self._cache.clear()
 
+    async def project_texts_to_2d(
+        self,
+        items: list[dict],
+        method: str = "pca",
+    ) -> list[dict]:
+        """
+        Project text embeddings into 2D with PCA or t-SNE.
+
+        items fields:
+          - text: raw text to embed
+          - label: point label
+          - type: secret | civilian_clue | imposter_clue
+          - distance: optional semantic similarity metadata
+        """
+        if not items:
+            return []
+
+        embeddings = []
+        valid_items = []
+        for item in items:
+            vec = await self.get_embedding(item.get("text", ""))
+            if vec is not None:
+                embeddings.append(vec)
+                valid_items.append(item)
+
+        if not embeddings:
+            return []
+
+        matrix = np.vstack(embeddings)
+        points_2d = None
+
+        if matrix.shape[0] == 1:
+            points_2d = np.array([[0.0, 0.0]])
+        else:
+            if method.lower() == "tsne":
+                try:
+                    import importlib
+
+                    sklearn_manifold = importlib.import_module("sklearn.manifold")
+                    TSNE = getattr(sklearn_manifold, "TSNE")
+
+                    perplexity = min(30, max(2, matrix.shape[0] - 1))
+                    tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
+                    points_2d = tsne.fit_transform(matrix)
+                except Exception:
+                    points_2d = None
+
+            if points_2d is None:
+                centered = matrix - np.mean(matrix, axis=0)
+                _, _, vt = np.linalg.svd(centered, full_matrices=False)
+                components = vt[:2].T
+                points_2d = centered @ components
+
+        max_abs = float(np.max(np.abs(points_2d))) if points_2d.size > 0 else 1.0
+        scale = max(max_abs, 1e-6)
+        normalized = points_2d / scale
+
+        vectors = []
+        for idx, item in enumerate(valid_items):
+            vectors.append(
+                {
+                    "x": float(normalized[idx][0]),
+                    "y": float(normalized[idx][1]),
+                    "label": item.get("label", item.get("text", "")),
+                    "type": item.get("type", "civilian_clue"),
+                    "distance": item.get("distance"),
+                }
+            )
+        return vectors
+
 
 # Singleton instance
 _embedding_service: Optional[EmbeddingService] = None

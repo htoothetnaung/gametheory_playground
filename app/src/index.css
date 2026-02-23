@@ -52,6 +52,10 @@
     font-family: 'Rajdhani', sans-serif;
     overflow-x: hidden;
   }
+
+  html.light body {
+    @apply bg-slate-100 text-slate-900;
+  }
   
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Orbitron', sans-serif;
@@ -69,11 +73,25 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 
                 inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
+
+  html.light .glass-panel {
+    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
   
   .glass-panel-strong {
     @apply bg-black/40 backdrop-blur-2xl border border-white/10 rounded-xl;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 
                 inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  html.light .glass-panel-strong {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.95);
   }
   
   .neon-glow {
@@ -244,6 +262,10 @@
 
 ::-webkit-scrollbar-track {
   background: #0a0a0a;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #e2e8f0;
 }
 
 ::-webkit-scrollbar-thumb {

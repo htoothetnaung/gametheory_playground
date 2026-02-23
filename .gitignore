@@ -30,6 +30,13 @@ ENV/
 # Node modules
 node_modules/
 
+game_theory_concepts_ppts/
+
+
+#markdown/note/ txt files 
+*.md
+*.txt
+
 # Build outputs
 dist/
 build/

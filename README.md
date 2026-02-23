@@ -60,8 +60,7 @@ This project implements four core concepts from Straffin's textbook:
 - **Node.js 18+** with npm
 - **Ollama** (for local embeddings): [Download here](https://ollama.ai)
 - **API Keys** (choose one):
-  - Google Gemini API (free tier): [Get key](https://ai.google.dev)
-  - Groq API (free tier): [Get key](https://console.groq.com)
+   - No cloud LLM key required by default (local Ollama models)
 
 
 ### Installation
@@ -80,7 +79,7 @@ pip install -r requirements.txt
 
 # Configure environment
 copy .env.example .env
-# Edit .env and add your GOOGLE_API_KEY or GROQ_API_KEY
+# Edit .env if needed (defaults work for local Ollama)
 ```
 
 #### 2️⃣ Frontend Setup
@@ -100,6 +99,9 @@ ollama serve
 
 # Terminal 2: Pull embedding model
 ollama pull nomic-embed-text
+
+# Terminal 3: Pull small local LLM model for agents
+ollama pull llama3.2:3b
 ```
 
 ### Running the Game
@@ -126,6 +128,47 @@ python test_server.py
 
 **Access the game**: http://localhost:5173
 
+### ✅ Quick Run Commands (Windows)
+
+Use these exact commands from project root:
+
+```powershell
+# Terminal 1 (optional but recommended for local embeddings)
+ollama serve
+```
+
+```powershell
+# Terminal 2 (backend)
+Set-Location backend
+
+# If using venv:
+venv\Scripts\activate
+
+# OR if using conda (example):
+# conda activate ai_env
+
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+```powershell
+# Terminal 3 (frontend)
+Set-Location app
+npm install
+npm run dev
+```
+
+```powershell
+# Terminal 4 (optional backend sanity check)
+Set-Location backend
+python test_server.py
+```
+
+Open:
+- Frontend: http://localhost:5173
+- Backend health: http://localhost:8000
+- WebSocket: ws://localhost:8000/ws
+
 ---
 
 ## 🎯 How to Play
@@ -140,6 +183,19 @@ python test_server.py
    - **Imposter Guess**: If imposter survives, they guess the secret word
    - **Game End**: Civilians win (imposter eliminated) or Imposter wins (guesses word or ≤2 players remain)
 
+### 🧭 Session Roles & Controls
+
+- **Observer**: Receives redacted state (no secret word, no imposter identity).
+- **Participant**: Claims one alive player slot and can submit manual clues/votes for that slot.
+- **Admin**: Receives full state + admin streams (beliefs, vectors, metrics).
+
+In the Control Panel:
+
+- Use **Observe / Participate** to switch mode.
+- Use **Claim a player slot** after switching to participant.
+- Use **Show/Hide Word** and **Discard** for secret-word display controls.
+- Use **Light/Dark Mode** toggle for UI theme.
+
 ---
 
 ## 🔧 Configuration
@@ -148,9 +204,8 @@ Edit `backend/.env`:
 
 ```bash
 # LLM Provider (choose one)
-LLM_PROVIDER=gemini          # or "groq"
-GOOGLE_API_KEY=your_key_here # if using gemini
-GROQ_API_KEY=your_key_here   # if using groq
+LLM_PROVIDER=ollama
+LLM_MODEL=llama3.2:3b
 
 # Embedding Provider
 EMBEDDING_PROVIDER=ollama     # or "openrouter"
@@ -158,9 +213,8 @@ OLLAMA_BASE_URL=http://localhost:11434
 OPENROUTER_API_KEY=your_key  # if using openrouter
 ```
 
-**LLM Models**:
-- Gemini: `gemini-2.0-flash-exp` (default, fast, good reasoning)
-- Groq: `llama-3.1-70b-versatile` (fast inference, strong performance)
+**LLM Models (default local/free)**:
+- Ollama: `llama3.2:3b` (small, fast, local)
 
 **Embedding Models**:
 - Ollama: `nomic-embed-text` (768d, local, fast)
@@ -176,11 +230,24 @@ OPENROUTER_API_KEY=your_key  # if using openrouter
 - `game:state` - State updates
 - `clue:new` - New clue generated
 - `agent:internal` - Agent thoughts (God mode)
+- `session:info` - Current client session mode and claimed slot
+- `admin:beliefs` - Imposter belief stream (admin only)
+- `admin:vectors` - Semantic vector stream (admin only)
+- `admin:metrics` - Runtime metrics stream (admin only)
+- `admin:secret_word:state` - Shared secret-word card UI state (visible/discarded/collapsed)
+- `error` - Error payload for invalid actions
 
 **Events FROM Client**:
 - `game:start` - Initialize game
 - `game:pause` / `game:resume` - Control game flow
 - `game:next_turn` - Advance to next player
+- `session:set_mode` - Set role (`observer` | `participant` | `admin`)
+- `player:claim_slot` - Claim participant player slot
+- `clue:submit` - Submit clue for claimed slot
+- `vote:submit` - Submit vote for claimed slot
+- `admin:secret_word:set_visible` - Toggle secret-word reveal state
+- `admin:secret_word:discard` - Discard current round's secret word display
+- `admin:secret_word:set_collapsed` - Open/close secret-word card UI
 
 ### REST API
 - `GET /` - Health check
@@ -189,6 +256,9 @@ OPENROUTER_API_KEY=your_key  # if using openrouter
 - `GET /api/admin/imposter-beliefs` - Bayesian belief distribution
 - `GET /api/admin/semantic-vectors` - 2D vector positions
 - `GET /api/admin/game-metrics` - Nash equilibrium adherence
+- `GET /api/admin/secret-word-state` - Current shared secret-word UI state
+- `GET /api/analytics/player-stats` - Historical player/tactic metrics
+- `POST /api/tournament/simulate` - ELO + round-robin simulation helper
 
 ---
 

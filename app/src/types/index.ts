@@ -1,6 +1,8 @@
 export type PlayerRole = 'civilian' | 'imposter';
 export type GamePhase = 'clue_giving' | 'voting' | 'imposter_guess' | 'ended';
 export type ViewMode = 'theater' | 'god';
+export type UserMode = 'observer' | 'participant' | 'admin';
+export type ThemeMode = 'dark' | 'light';
 
 export interface Player {
   id: string;
@@ -32,6 +34,7 @@ export interface Vote {
 export interface ImposterKnowledge {
   candidateWords: { word: string; probability: number }[];
   confidence: number;
+  entropy?: number;
   topGuess: string;
   thoughtProcess: string;
 }
@@ -39,6 +42,7 @@ export interface ImposterKnowledge {
 export interface GameState {
   secretWord: string;
   imposterId: string;
+  imposterIds: string[];
   phase: GamePhase;
   round: number;
   currentPlayerIndex: number;
@@ -57,6 +61,22 @@ export interface SemanticVector {
   distance?: number;
 }
 
+export interface GameMetrics {
+  averageCivilianSimilarity: number;
+  totalClues: number;
+  optimalCluesCount: number;
+  optimalCluesRatio: number;
+  informationLeakage: boolean;
+  coordinationFailure: boolean;
+  imposterConfidence: number;
+  playerLeakage: Record<string, number>;
+  strategyWinRate: {
+    safe: number;
+    risky: number;
+  };
+  entropyHistory?: number[];
+}
+
 export interface AgentInternal {
   playerId: string;
   playerName: string;
@@ -64,4 +84,10 @@ export interface AgentInternal {
   thought: string;
   strategy: string;
   timestamp: number;
+}
+
+export interface SessionInfo {
+  clientId: string;
+  mode: UserMode;
+  participantPlayerId?: string | null;
 }

@@ -2,7 +2,7 @@ import { useGameStore } from '@/store/gameStore';
 import { MessageSquare, Vote, Brain, Trophy } from 'lucide-react';
 
 export function PhaseIndicator() {
-  const { gameState } = useGameStore();
+  const { gameState, themeMode } = useGameStore();
   const { phase } = gameState;
   
   const phaseConfig = {
@@ -56,7 +56,7 @@ export function PhaseIndicator() {
         <p className={`font-display text-sm font-semibold ${config.color}`}>
           {config.label}
         </p>
-        <p className="text-xs text-white/50">
+        <p className={`text-xs ${themeMode === 'dark' ? 'text-white/50' : 'text-slate-600'}`}>
           {config.description}
         </p>
       </div>

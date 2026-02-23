@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Player } from '@/types';
 import { useGameStore } from '@/store/gameStore';
@@ -8,9 +9,12 @@ interface HumanoidAvatarProps {
   player: Player;
   position: [number, number, number];
   angle: number;
+  clueText?: string;
+  thoughtText?: string;
+  cueText?: string;
 }
 
-export function HumanoidAvatar({ player, position, angle }: HumanoidAvatarProps) {
+export function HumanoidAvatar({ player, position, angle, clueText, thoughtText, cueText }: HumanoidAvatarProps) {
   const groupRef = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Mesh>(null);
@@ -54,7 +58,7 @@ export function HumanoidAvatar({ player, position, angle }: HumanoidAvatarProps)
   // Ghost/dead appearance
   if (!isAlive) {
     return (
-      <group position={position} rotation={[0, -angle + Math.PI / 2, 0]}>
+      <group position={position} rotation={[0, -angle + Math.PI / 2 + Math.PI, 0]}>
         <group ref={groupRef}>
           {/* Ghost body - translucent */}
           <mesh position={[0, 0.9, 0]}>
@@ -79,31 +83,41 @@ export function HumanoidAvatar({ player, position, angle }: HumanoidAvatarProps)
   return (
     <group 
       position={position}
-      rotation={[0, -angle + Math.PI / 2, 0]}
+      rotation={[0, -angle + Math.PI / 2 + Math.PI, 0]}
       onClick={handleClick}
     >
       <group ref={groupRef}>
         {/* LEGS */}
         {/* Left Leg */}
-        <mesh position={[-0.12, 0.35, 0]} castShadow>
-          <boxGeometry args={[0.12, 0.7, 0.15]} />
-          <meshStandardMaterial color="#1a1a2e" roughness={0.7} />
+        <mesh position={[-0.12, 0.35, 0]}>
+          <cylinderGeometry args={[0.07, 0.07, 0.68, 16]} />
+          <meshStandardMaterial color="#334155" roughness={0.65} />
         </mesh>
         {/* Right Leg */}
-        <mesh position={[0.12, 0.35, 0]} castShadow>
-          <boxGeometry args={[0.12, 0.7, 0.15]} />
-          <meshStandardMaterial color="#1a1a2e" roughness={0.7} />
+        <mesh position={[0.12, 0.35, 0]}>
+          <cylinderGeometry args={[0.07, 0.07, 0.68, 16]} />
+          <meshStandardMaterial color="#334155" roughness={0.65} />
+        </mesh>
+
+        {/* Feet */}
+        <mesh position={[-0.12, 0.02, 0.06]}>
+          <boxGeometry args={[0.13, 0.06, 0.2]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.8} />
+        </mesh>
+        <mesh position={[0.12, 0.02, 0.06]}>
+          <boxGeometry args={[0.13, 0.06, 0.2]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.8} />
         </mesh>
         
         {/* TORSO */}
-        <mesh position={[0, 0.9, 0]} castShadow>
-          <boxGeometry args={[0.4, 0.55, 0.25]} />
+        <mesh position={[0, 0.9, 0]}>
+          <capsuleGeometry args={[0.19, 0.32, 8, 16]} />
           <meshStandardMaterial 
             color={player.color} 
             roughness={0.4}
             metalness={0.3}
-            emissive={isSpeaking ? player.color : '#000000'}
-            emissiveIntensity={isSpeaking ? 0.3 : 0}
+            emissive={player.color}
+            emissiveIntensity={isSpeaking ? 0.5 : 0.2}
           />
         </mesh>
         
@@ -115,32 +129,32 @@ export function HumanoidAvatar({ player, position, angle }: HumanoidAvatarProps)
         
         {/* ARMS */}
         {/* Left Arm */}
-        <mesh position={[-0.28, 0.95, 0]} castShadow>
-          <boxGeometry args={[0.1, 0.5, 0.12]} />
-          <meshStandardMaterial color={player.color} roughness={0.5} />
+        <mesh position={[-0.28, 0.95, 0]}>
+          <cylinderGeometry args={[0.045, 0.045, 0.48, 14]} />
+          <meshStandardMaterial color={player.color} roughness={0.5} emissive={player.color} emissiveIntensity={0.12} />
         </mesh>
         {/* Left Hand */}
         <mesh position={[-0.28, 0.6, 0]}>
-          <boxGeometry args={[0.08, 0.1, 0.1]} />
+          <sphereGeometry args={[0.055, 12, 12]} />
           <meshStandardMaterial color="#e0c8a0" roughness={0.8} />
         </mesh>
         
         {/* Right Arm */}
-        <mesh position={[0.28, 0.95, 0]} castShadow>
-          <boxGeometry args={[0.1, 0.5, 0.12]} />
-          <meshStandardMaterial color={player.color} roughness={0.5} />
+        <mesh position={[0.28, 0.95, 0]}>
+          <cylinderGeometry args={[0.045, 0.045, 0.48, 14]} />
+          <meshStandardMaterial color={player.color} roughness={0.5} emissive={player.color} emissiveIntensity={0.12} />
         </mesh>
         {/* Right Hand */}
         <mesh position={[0.28, 0.6, 0]}>
-          <boxGeometry args={[0.08, 0.1, 0.1]} />
+          <sphereGeometry args={[0.055, 12, 12]} />
           <meshStandardMaterial color="#e0c8a0" roughness={0.8} />
         </mesh>
         
         {/* HEAD GROUP */}
         <group ref={headRef} position={[0, 1.5, 0]}>
           {/* Head base */}
-          <mesh castShadow>
-            <boxGeometry args={[0.28, 0.32, 0.28]} />
+          <mesh>
+            <sphereGeometry args={[0.17, 20, 20]} />
             <meshStandardMaterial color="#e0c8a0" roughness={0.6} />
           </mesh>
           
@@ -171,8 +185,8 @@ export function HumanoidAvatar({ player, position, angle }: HumanoidAvatarProps)
           {/* Imposter indicator (subtle red tint on head) */}
           {isImposter && (
             <mesh position={[0, 0, 0]}>
-              <boxGeometry args={[0.29, 0.33, 0.29]} />
-              <meshBasicMaterial color="#ff4757" transparent opacity={0.1} />
+              <sphereGeometry args={[0.19, 16, 16]} />
+              <meshBasicMaterial color="#ff4757" transparent opacity={0.12} />
             </mesh>
           )}
         </group>
@@ -194,12 +208,44 @@ export function HumanoidAvatar({ player, position, angle }: HumanoidAvatarProps)
         )}
         
         {/* NAME TAG */}
-        <group position={[0, 2, 0]}>
-          <mesh>
-            <planeGeometry args={[1, 0.25]} />
-            <meshBasicMaterial color="#0a0a0a" transparent opacity={0.9} />
-          </mesh>
-        </group>
+        <Html position={[0, 2.2, 0]} center distanceFactor={8} sprite>
+          <div
+            className={`px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap border text-white bg-black/85 ${
+              isSelected
+                ? 'border-neon-purple shadow-[0_0_12px_rgba(168,133,255,0.85)]'
+                : 'border-white/25 shadow-[0_0_6px_rgba(0,0,0,0.35)]'
+            }`}
+          >
+            {player.name}
+          </div>
+        </Html>
+
+        {clueText && (
+          <Html position={[0, 2.85, 0]} center distanceFactor={8} sprite>
+            <div className="max-w-[180px] px-2.5 py-1 rounded-lg border border-cyan-400/40 bg-slate-900/85 text-cyan-100 text-[11px] leading-tight shadow-[0_0_14px_rgba(34,211,238,0.25)]">
+              <span className="text-cyan-300/80 text-[10px] uppercase tracking-wide mr-1">clue</span>
+              <span>&quot;{clueText}&quot;</span>
+            </div>
+          </Html>
+        )}
+
+        {!clueText && cueText && (
+          <Html position={[0, 2.85, 0]} center distanceFactor={8} sprite>
+            <div className="max-w-[200px] px-2.5 py-1 rounded-lg border border-emerald-400/35 bg-emerald-950/50 text-emerald-100 text-[10px] leading-tight shadow-[0_0_12px_rgba(16,185,129,0.22)] animate-pulse">
+              <span className="text-emerald-300/80 text-[9px] uppercase tracking-wide mr-1">turn</span>
+              <span>{cueText}</span>
+            </div>
+          </Html>
+        )}
+
+        {thoughtText && (
+          <Html position={[0, 3.4, 0]} center distanceFactor={8} sprite>
+            <div className="max-w-[210px] px-2.5 py-1 rounded-lg border border-violet-400/35 bg-violet-950/55 text-violet-100 text-[10px] leading-tight shadow-[0_0_12px_rgba(168,133,255,0.25)]">
+              <span className="text-violet-300/80 text-[9px] uppercase tracking-wide mr-1">thinking</span>
+              <span>{thoughtText}</span>
+            </div>
+          </Html>
+        )}
       </group>
     </group>
   );

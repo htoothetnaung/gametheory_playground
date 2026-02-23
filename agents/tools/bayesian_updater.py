@@ -187,6 +187,7 @@ async def _async_update(
     # Calculate confidence
     max_entropy = math.log2(len(current_beliefs))
     confidence = 1.0 - (posterior_entropy / max_entropy) if max_entropy > 0 else 1.0
+    normalized_entropy = (posterior_entropy / max_entropy) if max_entropy > 0 else 0.0
     
     # Generate reasoning
     top_word = top_candidates[0]["word"] if top_candidates else "unknown"
@@ -203,6 +204,7 @@ async def _async_update(
         "updated_beliefs": updated_beliefs,
         "top_candidates": top_candidates,
         "confidence": round(confidence, 3),
+        "entropy": round(normalized_entropy, 3),
         "entropy_reduction": round(entropy_reduction, 3),
         "reasoning": reasoning,
         "clue_analyzed": new_clue

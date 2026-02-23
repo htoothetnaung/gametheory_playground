@@ -118,6 +118,27 @@ input:focus-visible {
   pointer-events: none;
 }
 
+.hero-particle-0 { left: 4%; top: 8%; animation-delay: 0.2s; animation-duration: 8.4s; }
+.hero-particle-1 { left: 11%; top: 19%; animation-delay: 0.9s; animation-duration: 9.2s; }
+.hero-particle-2 { left: 18%; top: 31%; animation-delay: 1.4s; animation-duration: 10.3s; }
+.hero-particle-3 { left: 25%; top: 43%; animation-delay: 2.1s; animation-duration: 11.4s; }
+.hero-particle-4 { left: 33%; top: 54%; animation-delay: 2.8s; animation-duration: 9.8s; }
+.hero-particle-5 { left: 40%; top: 66%; animation-delay: 3.3s; animation-duration: 8.8s; }
+.hero-particle-6 { left: 47%; top: 77%; animation-delay: 3.9s; animation-duration: 10.9s; }
+.hero-particle-7 { left: 55%; top: 21%; animation-delay: 4.4s; animation-duration: 9.5s; }
+.hero-particle-8 { left: 62%; top: 35%; animation-delay: 0.7s; animation-duration: 10.6s; }
+.hero-particle-9 { left: 69%; top: 48%; animation-delay: 1.8s; animation-duration: 11.1s; }
+.hero-particle-10 { left: 76%; top: 60%; animation-delay: 2.6s; animation-duration: 8.7s; }
+.hero-particle-11 { left: 83%; top: 72%; animation-delay: 3.7s; animation-duration: 9.9s; }
+.hero-particle-12 { left: 90%; top: 84%; animation-delay: 4.1s; animation-duration: 10.4s; }
+.hero-particle-13 { left: 14%; top: 88%; animation-delay: 0.5s; animation-duration: 9.3s; }
+.hero-particle-14 { left: 22%; top: 12%; animation-delay: 1.2s; animation-duration: 10.7s; }
+.hero-particle-15 { left: 31%; top: 24%; animation-delay: 2.4s; animation-duration: 8.9s; }
+.hero-particle-16 { left: 58%; top: 15%; animation-delay: 3.1s; animation-duration: 9.6s; }
+.hero-particle-17 { left: 72%; top: 27%; animation-delay: 4.3s; animation-duration: 10.8s; }
+.hero-particle-18 { left: 86%; top: 39%; animation-delay: 1.6s; animation-duration: 11.2s; }
+.hero-particle-19 { left: 95%; top: 51%; animation-delay: 2.9s; animation-duration: 8.6s; }
+
 /* HUD corner decorations */
 .hud-corner {
   position: absolute;
