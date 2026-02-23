@@ -1,15 +1,33 @@
-import { useState } from 'react';
-import { useOfflineGameStore } from '@/store/offlineGameStore';
-import { Users, UserPlus, Shuffle, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useOfflineGameStore, MIN_PLAYERS, MAX_PLAYERS } from '@/store/offlineGameStore';
+import { Users, UserPlus, Shuffle, ArrowLeft, Minus, Plus } from 'lucide-react';
 
 interface NameEntryProps {
   onBack: () => void;
 }
 
+const PLAYER_EMOJIS = ['🦊', '🐺', '🦁', '🐸', '🦉', '🐙', '🦅', '🐯', '🐨', '🦋', '🐬', '🦖'];
+
 export function NameEntry({ onBack }: NameEntryProps) {
-  const { totalPlayers, setPlayerNames, startGame } = useOfflineGameStore();
+  const { totalPlayers, setTotalPlayers, setPlayerNames, startGame } = useOfflineGameStore();
   const [names, setNames] = useState<string[]>(Array(totalPlayers).fill(''));
   const [error, setError] = useState('');
+
+  // Sync names array when totalPlayers changes
+  useEffect(() => {
+    setNames((prev) => {
+      if (prev.length === totalPlayers) return prev;
+      if (prev.length < totalPlayers) {
+        return [...prev, ...Array(totalPlayers - prev.length).fill('')];
+      }
+      return prev.slice(0, totalPlayers);
+    });
+  }, [totalPlayers]);
+
+  const handleCountChange = (delta: number) => {
+    setTotalPlayers(totalPlayers + delta);
+    setError('');
+  };
 
   const handleNameChange = (index: number, value: string) => {
     const updated = [...names];
@@ -33,8 +51,6 @@ export function NameEntry({ onBack }: NameEntryProps) {
     startGame();
   };
 
-  const PLAYER_EMOJIS = ['🦊', '🐺', '🦁', '🐸', '🦉', '🐙'];
-
   const allFilled = names.every((n) => n.trim() !== '');
 
   return (
@@ -54,28 +70,63 @@ export function NameEntry({ onBack }: NameEntryProps) {
         </button>
 
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-neon-purple/30 mb-4">
             <UserPlus className="w-4 h-4 text-neon-purple" />
-            <span className="text-sm text-white/70 font-body">Enter Player Names</span>
+            <span className="text-sm text-white/70 font-body">Setup Your Game</span>
           </div>
 
           <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-2">
             Who's <span className="gradient-text">Playing</span>?
           </h2>
           <p className="text-white/40 font-body text-base">
-            6 players needed — 5 civilians, 1 secret imposter
+            {totalPlayers} players — {totalPlayers - 1} civilians, 1 secret imposter
           </p>
         </div>
 
+        {/* Player count selector */}
+        <div className="glass-panel-strong border border-neon-purple/20 rounded-2xl p-5 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-white/70 font-display">Number of Players</div>
+              <div className="text-xs text-white/30 font-body mt-0.5">{MIN_PLAYERS}–{MAX_PLAYERS} players supported</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleCountChange(-1)}
+                disabled={totalPlayers <= MIN_PLAYERS}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-all ${
+                  totalPlayers <= MIN_PLAYERS
+                    ? 'border-white/5 text-white/15 cursor-not-allowed'
+                    : 'border-white/20 text-white/70 hover:border-neon-purple/50 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="font-display text-2xl text-neon-purple font-bold w-8 text-center">{totalPlayers}</span>
+              <button
+                onClick={() => handleCountChange(1)}
+                disabled={totalPlayers >= MAX_PLAYERS}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-all ${
+                  totalPlayers >= MAX_PLAYERS
+                    ? 'border-white/5 text-white/15 cursor-not-allowed'
+                    : 'border-white/20 text-white/70 hover:border-neon-purple/50 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Name inputs */}
-        <div className="space-y-3 mb-6">
+        <div className="space-y-3 mb-6 max-h-[45vh] overflow-y-auto pr-1 custom-scroll">
           {names.map((name, i) => (
             <div
               key={i}
               className="flex items-center gap-3 glass-panel border border-white/10 rounded-xl px-4 py-3 transition-all focus-within:border-neon-purple/50 focus-within:shadow-[0_0_15px_rgba(168,133,255,0.15)]"
             >
-              <span className="text-2xl">{PLAYER_EMOJIS[i]}</span>
+              <span className="text-2xl">{PLAYER_EMOJIS[i % PLAYER_EMOJIS.length]}</span>
               <div className="flex-1">
                 <label className="text-xs text-white/30 font-mono block mb-0.5">
                   Player {i + 1}
@@ -89,7 +140,6 @@ export function NameEntry({ onBack }: NameEntryProps) {
                   className="w-full bg-transparent text-white/90 font-body text-lg outline-none placeholder:text-white/20"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      // Focus next input or submit
                       if (i < totalPlayers - 1) {
                         const next = document.querySelector(`input[data-idx="${i + 1}"]`) as HTMLInputElement;
                         next?.focus();

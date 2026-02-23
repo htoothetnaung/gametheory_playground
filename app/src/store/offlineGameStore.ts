@@ -34,6 +34,7 @@ interface OfflineGameStore {
   totalPlayers: number;
 
   // Actions
+  setTotalPlayers: (count: number) => void;
   setPlayerNames: (names: string[]) => void;
   startGame: () => void;
   readyToPick: () => void;       // Player confirms "I'm ready" → show face-down card
@@ -76,12 +77,15 @@ const WORD_BANK: WordEntry[] = [
   { word: 'Fireworks', hint: 'Night sky celebration', category: 'Events' },
 ];
 
-const PLAYER_EMOJIS = ['🦊', '🐺', '🦁', '🐸', '🦉', '🐙'];
+const PLAYER_EMOJIS = ['🦊', '🐺', '🦁', '🐸', '🦉', '🐙', '🦅', '🐯', '🐨', '🦋', '🐬', '🦖'];
 const PLAYER_COLORS = [
   '#FF3366', '#00CCFF', '#FFAA00', '#00FF88', '#AA00FF', '#FF6600',
+  '#FF00CC', '#00FFD5', '#FF4444', '#44BBFF', '#AAFF00', '#FF8800',
 ];
 
-const TOTAL_PLAYERS = 6;
+const DEFAULT_TOTAL_PLAYERS = 6;
+export const MIN_PLAYERS = 3;
+export const MAX_PLAYERS = 12;
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -98,7 +102,12 @@ export const useOfflineGameStore = create<OfflineGameStore>((set, get) => ({
   pickOrder: [],
   currentPickIndex: 0,
   currentWord: null,
-  totalPlayers: TOTAL_PLAYERS,
+  totalPlayers: DEFAULT_TOTAL_PLAYERS,
+
+  setTotalPlayers: (count: number) => {
+    const clamped = Math.max(MIN_PLAYERS, Math.min(MAX_PLAYERS, count));
+    set({ totalPlayers: clamped });
+  },
 
   setPlayerNames: (names: string[]) => {
     const players: OfflinePlayer[] = names.map((name, i) => ({
@@ -197,6 +206,7 @@ export const useOfflineGameStore = create<OfflineGameStore>((set, get) => ({
       pickOrder: [],
       currentPickIndex: 0,
       currentWord: null,
+      totalPlayers: DEFAULT_TOTAL_PLAYERS,
     });
   },
 }));

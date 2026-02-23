@@ -522,11 +522,11 @@ function LandingPage({ onSelectMode }: { onSelectMode: (mode: AppMode) => void }
             </div>
             <h3 className="font-display text-xl text-white mb-2">Play Offline</h3>
             <p className="text-sm text-white/40 leading-relaxed">
-              Play with friends on one device! 6 players, random roles,
+              Play with friends on one device! 3–12 players, random roles,
               pick cards secretly one by one like poker.
             </p>
             <div className="flex flex-wrap gap-2 mt-4">
-              {['6 Players', '1 Imposter', 'Pass & Play'].map((tag) => (
+              {['3–12 Players', '1 Imposter', 'Pass & Play'].map((tag) => (
                 <span key={tag} className="px-2 py-0.5 text-[10px] font-mono text-white/25 border border-white/10 rounded">
                   {tag}
                 </span>
